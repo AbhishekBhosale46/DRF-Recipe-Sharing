@@ -1,0 +1,15 @@
+1] Add image field to recipe
+2] Separate recipe detail view
+3] Ordering 
+4] Pagination
+5] Likes feature
+
+-----------------------------------
+
+1] Redis cacheing
+2] Jwt token
+3] reset password
+4] postgres connectivity
+5] dockerization
+6] deployment
+7] Tests
