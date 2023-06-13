@@ -57,16 +57,20 @@ class RecipeSerializer(serializers.ModelSerializer):
     category = CategorySerializer(many=True)
     instruction_set = InstructionSetSerializer()
     created_by = serializers.SerializerMethodField('get_created_by', read_only=True)
+    likes = serializers.SerializerMethodField('get_likes', read_only=True)
 
     class Meta:
         model = Recipe
-        fields = ['id', 'is_public', 'created_by', 'created_at', 'name', 'description', 'time', 
+        fields = ['id', 'is_public', 'created_by', 'created_at', 'likes', 'name', 'description', 'time', 
                   'servings', 'ingredients', 'category', 'instruction_set']
         read_only_fields = ['id', 'created_by', 'created_at']
 
     def get_created_by(self, recipe_obj):
         created_name = recipe_obj.user.name
         return created_name
+
+    def get_likes(self, recipe_obj):
+        return recipe_obj.likes_count()
 
     def create(self, validated_data):
         instruction_set_data = validated_data.pop('instruction_set')

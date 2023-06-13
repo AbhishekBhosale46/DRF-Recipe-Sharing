@@ -2,7 +2,10 @@ from rest_framework import viewsets, generics, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.shortcuts import get_object_or_404
 from core.models import Recipe, Comment
 from recipe import serializers
 
@@ -83,3 +86,16 @@ class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied()
         instance.delete()
 
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def like_unlike(request, recipe_id):
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    if recipe.likes.filter(pk=request.user.id).exists():
+        recipe.likes.remove(request.user)
+        return Response({'message': 'Unliked the recipe'})
+    else:
+        recipe.likes.add(request.user)
+        return Response({'message': 'Liked the recipe'})

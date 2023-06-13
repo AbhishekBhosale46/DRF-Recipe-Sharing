@@ -85,9 +85,13 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(Ingredients)
     category = models.ManyToManyField(Category)
     instruction_set = models.OneToOneField(InstructionSet, on_delete=models.CASCADE)
+    likes = models.ManyToManyField(User, related_name='recipes')
 
     def __str__(self):
         return self.name
+
+    def likes_count(self):
+        return self.likes.count()
 
 
 class Comment(models.Model):
