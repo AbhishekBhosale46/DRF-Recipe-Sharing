@@ -4,8 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
+from rest_framework.parsers import FileUploadParser, FormParser, MultiPartParser
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.views import APIView
 from core.models import Recipe, Comment
 from recipe import serializers
 
@@ -99,3 +102,34 @@ def like_unlike(request, recipe_id):
     else:
         recipe.likes.add(request.user)
         return Response({'message': 'Liked the recipe'})
+
+
+class RecipeImageView(APIView):
+    parser_classes = (FormParser, MultiPartParser)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        user = request.user.id
+        if user == recipe.user.id:
+            if 'file' not in request.data:
+                return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+            image = request.data['file']
+            recipe.image = image
+            recipe.save()
+            serializer = serializers.RecipeSerializer(recipe)
+            return Response(serializer.data)
+        else:
+            raise ValidationError({'message': 'You are not authorized to do this action'})
+
+    def delete(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        user = request.user.id
+        if user == recipe.user.id:
+            if recipe.image:
+                recipe.image.delete()
+                recipe.save()
+            return Response({'message': 'Image deleted successfully.'})
+        else:
+            raise ValidationError({'message': 'You are not authorized to do this action'})

@@ -62,7 +62,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ['id', 'is_public', 'created_by', 'created_at', 'likes', 'name', 'description', 'time', 
-                  'servings', 'ingredients', 'category', 'instruction_set']
+                  'servings', 'ingredients', 'category', 'instruction_set', 'image']
         read_only_fields = ['id', 'created_by', 'created_at']
 
     def get_created_by(self, recipe_obj):

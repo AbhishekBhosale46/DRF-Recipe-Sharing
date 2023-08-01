@@ -86,6 +86,7 @@ class Recipe(models.Model):
     category = models.ManyToManyField(Category)
     instruction_set = models.OneToOneField(InstructionSet, on_delete=models.CASCADE)
     likes = models.ManyToManyField(User, related_name='recipes')
+    image = models.ImageField(upload_to='recipe_images/', default='default_recipe_image.jpg')
 
     def __str__(self):
         return self.name
