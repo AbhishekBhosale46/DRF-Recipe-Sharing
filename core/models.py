@@ -5,6 +5,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.conf import settings
+from cloudinary.models import CloudinaryField
 
 class UserManager(BaseUserManager):
     """Manager for users"""
@@ -86,7 +87,7 @@ class Recipe(models.Model):
     category = models.ManyToManyField(Category)
     instruction_set = models.OneToOneField(InstructionSet, on_delete=models.CASCADE)
     likes = models.ManyToManyField(User, related_name='recipes')
-    image = models.ImageField(upload_to='recipe_images/', default='default_recipe_image.jpg')
+    image = CloudinaryField('image', null=True, blank=True)
 
     def __str__(self):
         return self.name

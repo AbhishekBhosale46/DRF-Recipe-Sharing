@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from core.models import Ingredients, Category, Recipe, InstructionSet, Step, Comment
-
+import cloudinary
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,12 +58,14 @@ class RecipeSerializer(serializers.ModelSerializer):
     instruction_set = InstructionSetSerializer()
     created_by = serializers.SerializerMethodField('get_created_by', read_only=True)
     likes = serializers.SerializerMethodField('get_likes', read_only=True)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
         fields = ['id', 'is_public', 'created_by', 'created_at', 'likes', 'name', 'description', 'time', 
-                  'servings', 'ingredients', 'category', 'instruction_set', 'image']
-        read_only_fields = ['id', 'created_by', 'created_at']
+                  'servings', 'ingredients', 'category', 'instruction_set', 'image', 'image_url']
+        read_only_fields = ['id', 'created_by', 'created_at', 'image_url']
+        
 
     def get_created_by(self, recipe_obj):
         created_name = recipe_obj.user.name
@@ -71,6 +73,11 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_likes(self, recipe_obj):
         return recipe_obj.likes_count()
+
+    def get_image_url(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
     def create(self, validated_data):
         instruction_set_data = validated_data.pop('instruction_set')
