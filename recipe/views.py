@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.parsers import FileUploadParser, FormParser, MultiPartParser
+from rest_framework.pagination import PageNumberPagination
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -34,11 +35,22 @@ class RecipeList(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
     serializer_class = serializers.RecipeSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         queryset = self.queryset
         queryset = queryset.exclude(group__isnull=False)
         return queryset.filter(is_public=True)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 
