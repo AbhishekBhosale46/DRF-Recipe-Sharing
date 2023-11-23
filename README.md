@@ -44,22 +44,11 @@ Go to the project directory
   cd my-project
 ```
 
-Install dependencies
+Build and start docker container
+
 
 ```bash
-  pip install -r requirements.txt
-```
-
-Set up the database
-
-```bash
-  python manage.py migrate
-```
-
-Start the development server
-
-```bash
-  python manage.py runserver
+  docker-compose up
 ```
 
 
