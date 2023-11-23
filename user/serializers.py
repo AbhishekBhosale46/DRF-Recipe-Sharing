@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.tokens import default_token_generator
 from django.utils.translation import gettext as _
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import serializers
 
 
@@ -45,3 +48,30 @@ class AuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+""" This serializer is to take email input, validate it and then send email"""
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    """ Function to validate email """
+    def validate_email(self,value):
+            user_model = get_user_model()
+            try:
+                user = user_model.objects.get(email = value)
+            except user_model.DoesNotExist:
+                raise serializers.ValidationError(_("User with given email doesnt exists"))
+            return value
+
+    """ Function to send email """
+    def send_reset_email(self):
+        email = self.validated_data['email']
+        user = get_user_model().objects.get(email=email)
+        token = default_token_generator.make_token(user)
+        reset_url = f"{settings.FRONTEND_URL}/reset/{user.id}/{token}/"
+        subject = "Password reset request"
+        message = f"Click link to reset password {reset_url}"
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        send_mail(subject, message, from_email, recipient_list)
+
+

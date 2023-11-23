@@ -2,7 +2,14 @@ from rest_framework import viewsets, generics, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.response import Response
+from rest_framework.parsers import FileUploadParser, FormParser, MultiPartParser
+from rest_framework.pagination import PageNumberPagination
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.views import APIView
 from core.models import Recipe, Comment
 from recipe import serializers
 
@@ -28,11 +35,22 @@ class RecipeList(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
     serializer_class = serializers.RecipeSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         queryset = self.queryset
         queryset = queryset.exclude(group__isnull=False)
         return queryset.filter(is_public=True)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 
@@ -83,3 +101,47 @@ class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied()
         instance.delete()
 
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def like_unlike(request, recipe_id):
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    if recipe.likes.filter(pk=request.user.id).exists():
+        recipe.likes.remove(request.user)
+        return Response({'message': 'Unliked the recipe'})
+    else:
+        recipe.likes.add(request.user)
+        return Response({'message': 'Liked the recipe'})
+
+
+class RecipeImageView(APIView):
+    parser_classes = (FormParser, MultiPartParser)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        user = request.user.id
+        if user == recipe.user.id:
+            if 'file' not in request.data:
+                return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+            image = request.data['file']
+            recipe.image = image
+            recipe.save()
+            serializer = serializers.RecipeSerializer(recipe)
+            return Response(serializer.data)
+        else:
+            raise ValidationError({'message': 'You are not authorized to do this action'})
+
+    def delete(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        user = request.user.id
+        if user == recipe.user.id:
+            if recipe.image:
+                recipe.image.delete()
+                recipe.save()
+            return Response({'message': 'Image deleted successfully.'})
+        else:
+            raise ValidationError({'message': 'You are not authorized to do this action'})
